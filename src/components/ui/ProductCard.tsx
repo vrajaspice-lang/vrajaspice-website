@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ShoppingCart, Zap } from "lucide-react";
 import { Product, getDiscountPercent } from "@/lib/products";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 const badgeColors: Record<string, string> = {
@@ -23,11 +25,18 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, priority = false }: ProductCardProps) {
   const { addItem } = useCart();
+  const { user } = useAuth();
+  const router = useRouter();
   const discount = getDiscountPercent(product.sellingPrice, product.mrp);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!user) {
+      toast.error("Please login to add items to your cart! 🌿");
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
     addItem(product);
     toast.success(`${product.name} added to cart! 🌿`);
   };

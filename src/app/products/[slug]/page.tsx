@@ -3,7 +3,8 @@
 import { useState, use, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
   ShoppingCart,
   Zap,
@@ -140,6 +141,8 @@ export default function ProductDetailPage({
   const [loading, setLoading] = useState(true);
   const [qty, setQty] = useState(1);
   const { addItem } = useCart();
+  const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     // Set static related fallback initially
@@ -232,11 +235,21 @@ export default function ProductDetailPage({
   const discount = getDiscountPercent(product.sellingPrice, product.mrp);
 
   const handleAddToCart = () => {
+    if (!user) {
+      toast.error("Please login to add items to your cart! 🌿");
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
     addItem(product, qty);
     toast.success(`${product.name} × ${qty} added to cart! 🌿`);
   };
 
   const handleBuyNow = () => {
+    if (!user) {
+      toast.error("Please login to buy items! 🌿");
+      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
     addItem(product, qty);
     toast.success(`${product.name} added — proceeding to checkout!`);
     // Cart drawer will open from addItem

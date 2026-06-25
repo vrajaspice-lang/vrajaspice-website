@@ -60,8 +60,11 @@ export async function proxy(request: NextRequest) {
     return response
   }
 
-  // 4. Redirect unregistered visitors to Login
-  if (!user && !isAuthPage) {
+  // Protect only checkout and account pages
+  const isProtectedRoute = path === '/checkout' || path.startsWith('/account')
+
+  // 4. Redirect unregistered visitors to Login for protected routes only
+  if (!user && isProtectedRoute && !isAuthPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirect', path)
