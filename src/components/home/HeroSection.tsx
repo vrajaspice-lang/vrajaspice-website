@@ -138,7 +138,7 @@ export default function HeroSection() {
             <div className="relative w-full max-w-md aspect-square">
               <Image
                 src="/hero.png"
-                alt="Vrajaspice premium spice arrangement forming S"
+                alt="Vrajaspice premium spice arrangement forming a heart"
                 fill
                 priority
                 className="object-contain drop-shadow-2xl"
