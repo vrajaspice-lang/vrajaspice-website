@@ -68,6 +68,21 @@ const EMPTY_FORM: ShippingForm = {
 
 type FormErrors = Partial<Record<keyof ShippingForm, string>>;
 
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (typeof window !== "undefined" && (window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
@@ -196,6 +211,7 @@ export default function CheckoutPage() {
         paymentMethod,
       };
 
+      // 1. Save order details locally first (payment_status will be 'awaiting_payment')
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -206,23 +222,96 @@ export default function CheckoutPage() {
 
       const { orderId } = await res.json();
 
-      if (paymentMethod === "cod") {
-        // COD: just redirect to confirmation
-        clearCart();
-        router.push(`/order-confirmation/${orderId}`);
-      } else {
-        // Online: Razorpay integration scaffold
-        // TODO: Load Razorpay script and open payment modal
-        // For now, simulate successful payment and redirect
-        clearCart();
-        router.push(`/order-confirmation/${orderId}`);
+      // 2. Load the Razorpay checkout library dynamically
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error("Razorpay SDK failed to load. Please check your internet connection.");
       }
-    } catch (err) {
+
+      // 3. Request Razorpay order credentials from backend
+      const rzpOrderRes = await fetch("/api/razorpay/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+
+      if (!rzpOrderRes.ok) {
+        const errorData = await rzpOrderRes.json();
+        throw new Error(errorData.error || "Failed to initialize payment gateway.");
+      }
+
+      const rzpOrderData = await rzpOrderRes.json();
+
+      // 4. Set up options and launch the Razorpay Checkout Modal
+      const options = {
+        key: rzpOrderData.key,
+        amount: rzpOrderData.amount,
+        currency: rzpOrderData.currency,
+        name: "Vraja Spice",
+        description: `Order Checkout (Ref: ${rzpOrderData.order_number})`,
+        image: "/logo.png",
+        order_id: rzpOrderData.id,
+        handler: async function (response: any) {
+          setIsSubmitting(true);
+          setSubmitError("");
+          try {
+            // Verify payment signature
+            const verifyRes = await fetch("/api/razorpay/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderId,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            if (!verifyRes.ok) {
+              const verifyError = await verifyRes.json();
+              throw new Error(verifyError.error || "Payment signature verification failed.");
+            }
+
+            const verifyResult = await verifyRes.json();
+            if (verifyResult.success) {
+              clearCart();
+              router.push(`/order-confirmation/${orderId}`);
+            } else {
+              throw new Error("Payment signature verification failed.");
+            }
+          } catch (err: any) {
+            console.error("Signature verification error:", err);
+            setSubmitError(err.message || "Payment signature verification failed. Please contact support.");
+          } finally {
+            setIsSubmitting(false);
+          }
+        },
+        prefill: {
+          name: form.fullName,
+          email: form.email,
+          contact: form.mobile,
+        },
+        notes: {
+          address: `${form.address1}, ${form.address2 || ''}, ${form.city}, ${form.state} - ${form.pinCode}`,
+        },
+        theme: {
+          color: "#8B1A1A",
+        },
+        modal: {
+          ondismiss: function () {
+            setIsSubmitting(false);
+          },
+        },
+      };
+
+      const paymentObject = new (window as any).Razorpay(options);
+      paymentObject.open();
+
+    } catch (err: any) {
       console.error(err);
       setSubmitError(
-        "Something went wrong while placing your order. Please try again."
+        err.message || "Something went wrong while placing your order. Please try again."
       );
-    } finally {
       setIsSubmitting(false);
     }
   }
@@ -830,16 +919,13 @@ function PlaceOrderButton({
   isSubmitting: boolean;
   total: number;
 }) {
-  const isCOD = paymentMethod === "cod";
   return (
     <button
       type="submit"
       disabled={isSubmitting}
       className="w-full py-4 rounded-2xl font-bold text-base transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
       style={{
-        background: isCOD
-          ? "linear-gradient(135deg, #D4A017 0%, #8B4513 100%)"
-          : "linear-gradient(135deg, #8B1A1A 0%, #E8721C 100%)",
+        background: "linear-gradient(135deg, #8B1A1A 0%, #E8721C 100%)",
         color: "#F5EDD8",
       }}
     >
@@ -867,10 +953,8 @@ function PlaceOrderButton({
               strokeLinecap="round"
             />
           </svg>
-          Placing Order…
+          Processing Payment…
         </span>
-      ) : isCOD ? (
-        `Confirm COD Order — ₹${total} →`
       ) : (
         `Pay with Razorpay — ₹${total} →`
       )}
