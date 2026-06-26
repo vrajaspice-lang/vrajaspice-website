@@ -274,6 +274,40 @@ export default function CheckoutPage() {
 
             const verifyResult = await verifyRes.json();
             if (verifyResult.success) {
+              try {
+                const confirmationData = {
+                  orderId: orderId.toString(),
+                  orderNumber: rzpOrderData.order_number,
+                  customerName: form.fullName,
+                  mobile: form.mobile,
+                  email: form.email,
+                  shippingAddress: {
+                    address1: form.address1,
+                    address2: form.address2,
+                    city: form.city,
+                    state: form.state,
+                    pinCode: form.pinCode,
+                  },
+                  items: items.map((i) => ({
+                    productId: i.product.id,
+                    productName: i.product.name,
+                    weight: i.product.weight,
+                    quantity: i.quantity,
+                    sellingPrice: i.product.sellingPrice,
+                    mrp: i.product.mrp,
+                    imageUrl: i.product.imageUrl,
+                  })),
+                  subtotal,
+                  shipping,
+                  total,
+                  paymentMethod,
+                  placedAt: new Date().toISOString(),
+                };
+                sessionStorage.setItem(`vrajaspice_order_${orderId}`, JSON.stringify(confirmationData));
+              } catch (sessErr) {
+                console.error("Failed to save order to sessionStorage:", sessErr);
+              }
+
               clearCart();
               router.push(`/order-confirmation/${orderId}`);
             } else {
