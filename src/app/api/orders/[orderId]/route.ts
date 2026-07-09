@@ -57,6 +57,8 @@ export async function GET(
       total: Number(order.total_amount),
       paymentMethod: order.payment_method,
       placedAt: order.created_at,
+      awbNumber: order.awb_number || null,
+      icarryShipmentId: order.icarry_shipment_id || null,
     }
 
     return NextResponse.json(formattedOrder)

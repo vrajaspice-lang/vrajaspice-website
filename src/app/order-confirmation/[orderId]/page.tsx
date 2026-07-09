@@ -35,6 +35,8 @@ interface OrderData {
   total: number;
   paymentMethod: string;
   placedAt: string;
+  awbNumber?: string;
+  icarryShipmentId?: string;
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -267,24 +269,28 @@ export default function OrderConfirmationPage({
           </p>
         </div>
 
-        {/* ── Delivery info ────────────────────────────────────────────────── */}
-        <div
-          className="rounded-2xl p-5 mb-5 fade-up-2 flex items-start gap-4"
-          style={{ background: "#22c55e12", border: "1px solid #22c55e33" }}
-        >
-          <span className="text-3xl mt-0.5">🚚</span>
-          <div>
-            <p className="font-semibold text-sm mb-1" style={{ color: "#166534" }}>
-              Estimated Delivery
-            </p>
-            <p className="text-sm font-bold" style={{ color: "#2C1810" }}>
-              {estimatedDelivery}
-            </p>
-            <p className="text-xs mt-1" style={{ color: "#8B4513" }}>
-              7–10 business days · Shipped via trusted courier partners
-            </p>
+        {/* ── Delivery/Tracking info ───────────────────────────────────────── */}
+        {order.icarryShipmentId ? (
+          <TrackingTimeline shipmentId={order.icarryShipmentId} awb={order.awbNumber} />
+        ) : (
+          <div
+            className="rounded-2xl p-5 mb-5 fade-up-2 flex items-start gap-4"
+            style={{ background: "#22c55e12", border: "1px solid #22c55e33" }}
+          >
+            <span className="text-3xl mt-0.5">🚚</span>
+            <div>
+              <p className="font-semibold text-sm mb-1" style={{ color: "#166534" }}>
+                Estimated Delivery
+              </p>
+              <p className="text-sm font-bold" style={{ color: "#2C1810" }}>
+                {estimatedDelivery}
+              </p>
+              <p className="text-xs mt-1" style={{ color: "#8B4513" }}>
+                7–10 business days · Shipped via trusted courier partners
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ── Order items ──────────────────────────────────────────────────── */}
         <div
@@ -469,3 +475,154 @@ export default function OrderConfirmationPage({
     </div>
   );
 }
+
+interface TrackingStep {
+  label: string;
+  desc: string;
+  done: boolean;
+  active: boolean;
+  icon: string;
+}
+
+function TrackingTimeline({ shipmentId, awb }: { shipmentId: string; awb?: string }) {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function getTracking() {
+      try {
+        const res = await fetch("/api/icarry/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ shipmentId }),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            setData(json);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching tracking:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    getTracking();
+  }, [shipmentId]);
+
+  if (loading) {
+    return (
+      <div className="rounded-2xl p-5 mb-5 bg-[#FAF3E4] border border-[#D4A01744] animate-pulse flex items-center justify-center py-8">
+        <span className="text-sm text-[#8B4513]">Loading tracking details…</span>
+      </div>
+    );
+  }
+
+  // Parse current status to determine which steps are completed
+  const currentStatusId = data?.statusId || 3; // default Shipped/In Transit
+  
+  // Status mapping:
+  // 1 = Booked/Order Created
+  // 3 = Shipped/In Transit
+  // 26 = Out for Delivery
+  // 21 = Delivered
+  const steps: TrackingStep[] = [
+    {
+      label: "Order Placed",
+      desc: "Your order has been recorded",
+      done: true,
+      active: currentStatusId === 1,
+      icon: "📦",
+    },
+    {
+      label: "Shipped",
+      desc: data?.carrier ? `In Transit via ${data.carrier}` : "Package is in transit",
+      done: currentStatusId === 3 || currentStatusId === 26 || currentStatusId === 21,
+      active: currentStatusId === 3,
+      icon: "🚚",
+    },
+    {
+      label: "Out for Delivery",
+      desc: "Out with delivery agent",
+      done: currentStatusId === 26 || currentStatusId === 21,
+      active: currentStatusId === 26,
+      icon: "🛵",
+    },
+    {
+      label: "Delivered",
+      desc: "Delivered successfully",
+      done: currentStatusId === 21,
+      active: currentStatusId === 21,
+      icon: "✅",
+    },
+  ];
+
+  return (
+    <div className="rounded-2xl p-6 mb-5 bg-[#FAF3E4] border border-[#D4A01744] fade-up-2">
+      <div className="flex items-center justify-between border-b border-[#D4A01722] pb-3 mb-4">
+        <div>
+          <h3 className="font-bold text-[#2C1810] text-sm">Shipment Status</h3>
+          <p className="text-xs text-[#8B4513]">AWB: <strong className="font-mono text-[#8B1A1A]">{awb || data?.awb || "Generating"}</strong></p>
+        </div>
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#22c55e15] text-[#166534] uppercase tracking-wide">
+          {data?.status || "In Transit"}
+        </span>
+      </div>
+
+      {/* Progress Timeline */}
+      <div className="relative pl-6 border-l-2 border-[#D4A01733] space-y-6">
+        {steps.map((step, idx) => (
+          <div key={idx} className="relative">
+            {/* Step marker */}
+            <div
+              className={`absolute -left-[35px] top-0 w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-sm transition-all duration-300 ${
+                step.done
+                  ? "bg-[#22c55e] text-white"
+                  : step.active
+                  ? "bg-[#8B1A1A] text-white animate-pulse"
+                  : "bg-[#F5EDD8] border border-[#D4A01744] text-[#C4A88A]"
+              }`}
+            >
+              {step.done ? "✓" : idx + 1}
+            </div>
+
+            {/* Step Content */}
+            <div className="flex items-start gap-2.5">
+              <span className="text-lg mt-0.5">{step.icon}</span>
+              <div>
+                <p
+                  className={`text-sm font-semibold leading-tight ${
+                    step.done ? "text-[#2C1810]" : "text-[#C4A88A]"
+                  }`}
+                >
+                  {step.label}
+                </p>
+                <p className="text-xs text-[#8B4513]/70 mt-0.5">{step.desc}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Historical logs if any */}
+      {data?.events && data.events.length > 0 && (
+        <div className="mt-6 pt-4 border-t border-[#D4A01722]">
+          <h4 className="text-xs font-bold text-[#2C1810] uppercase tracking-wider mb-2">History</h4>
+          <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+            {data.events.map((evt: any, i: number) => (
+              <div key={i} className="flex justify-between items-start text-xs border-b border-[#D4A01711] pb-1.5 last:border-0">
+                <div>
+                  <p className="font-semibold text-[#8B4513]">{evt.status || evt.activity}</p>
+                  <p className="text-[10px] text-[#C4A88A]">{evt.location}</p>
+                </div>
+                <p className="text-[10px] text-[#8B4513]/60 text-right">{evt.date || evt.timestamp}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

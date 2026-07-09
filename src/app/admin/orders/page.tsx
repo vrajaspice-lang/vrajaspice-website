@@ -18,6 +18,8 @@ interface Order {
   paymentStatus: string
   status: OrderStatus
   date: string
+  awbNumber?: string
+  icarryShipmentId?: string
 }
 
 // ── Status styling ───────────────────────────────────────────────────────────
@@ -100,6 +102,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState<FilterTab>('All')
   const [orderStatuses, setOrderStatuses] = useState<Record<string, OrderStatus>>({})
+  const [shippingLoadingId, setShippingLoadingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchOrders()
@@ -118,6 +121,8 @@ export default function OrdersPage() {
           payment_status,
           order_status,
           created_at,
+          awb_number,
+          icarry_shipment_id,
           customers ( full_name ),
           order_items ( product_name, quantity )
         `)
@@ -144,6 +149,8 @@ export default function OrdersPage() {
           payment: o.payment_method?.toUpperCase() || 'ONLINE',
           paymentStatus: o.payment_status,
           status: mapOrderStatus(o.order_status),
+          awbNumber: o.awb_number || undefined,
+          icarryShipmentId: o.icarry_shipment_id || undefined,
           date: new Date(o.created_at).toLocaleDateString('en-IN', {
             day: 'numeric',
             month: 'short',
@@ -155,6 +162,29 @@ export default function OrdersPage() {
       setOrders(mapped)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // ── Ship with iCarry Action ────────────────────────────────────────────────
+  const handleShipOrder = async (orderId: string) => {
+    setShippingLoadingId(orderId)
+    try {
+      const res = await fetch('/api/icarry/create-shipment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      })
+      const result = await res.json()
+      if (res.ok && result.success) {
+        alert(`Shipment booked successfully! AWB: ${result.awb}`)
+        fetchOrders()
+      } else {
+        alert(`Error booking shipment: ${result.error}`)
+      }
+    } catch (err: any) {
+      alert(`Booking failed: ${err.message}`)
+    } finally {
+      setShippingLoadingId(null)
     }
   }
 
@@ -259,7 +289,7 @@ export default function OrdersPage() {
               return (
                 <li key={order.id} className="hover:bg-[#D4A017]/3 transition-colors">
                   {/* Desktop row */}
-                  <div className="hidden xl:grid grid-cols-[110px_80px_1fr_1fr_90px_110px_130px_90px_120px] gap-3 items-center px-5 py-3.5">
+                  <div className="hidden xl:grid grid-cols-[110px_80px_1fr_1fr_90px_110px_130px_90px_150px] gap-3 items-center px-5 py-3.5">
                     <p className="text-[#D4A017] text-xs font-mono font-semibold truncate">{order.orderNumber}</p>
                     <p className="text-[#F5EDD8]/30 text-xs font-mono">#{order.id}</p>
                     <p className="text-[#F5EDD8] text-sm truncate">{order.customer}</p>
@@ -270,13 +300,29 @@ export default function OrdersPage() {
                     `}>
                       {order.payment}
                     </span>
-                    <StatusBadge status={currentStatus} />
+                    <div>
+                      <StatusBadge status={currentStatus} />
+                      {order.awbNumber && (
+                        <p className="text-[10px] text-[#22C55E] font-mono mt-0.5">AWB: {order.awbNumber}</p>
+                      )}
+                    </div>
                     <p className="text-[#F5EDD8]/40 text-xs">{order.date}</p>
-                    <StatusDropdown
-                      orderId={order.id}
-                      current={currentStatus}
-                      onChange={(s) => updateStatus(order.id, s)}
-                    />
+                    <div className="flex items-center gap-2">
+                      <StatusDropdown
+                        orderId={order.id}
+                        current={currentStatus}
+                        onChange={(s) => updateStatus(order.id, s)}
+                      />
+                      {!order.awbNumber && (currentStatus === 'Confirmed' || currentStatus === 'Packed') && (
+                        <button
+                          onClick={() => handleShipOrder(order.id)}
+                          disabled={shippingLoadingId === order.id}
+                          className="bg-[#22C55E] hover:bg-[#16a34a] text-white text-[10px] font-bold px-2 py-1.5 rounded-lg disabled:opacity-50 transition-colors whitespace-nowrap"
+                        >
+                          {shippingLoadingId === order.id ? 'Booking...' : '🚢 Ship'}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Mobile card */}
@@ -286,18 +332,34 @@ export default function OrdersPage() {
                         <p className="text-[#D4A017] text-xs font-mono font-semibold">{order.orderNumber}</p>
                         <p className="text-[#F5EDD8]/30 text-[10px] font-mono">#{order.id}</p>
                       </div>
-                      <StatusBadge status={currentStatus} />
+                      <div className="text-right">
+                        <StatusBadge status={currentStatus} />
+                        {order.awbNumber && (
+                          <p className="text-[9px] text-[#22C55E] font-mono mt-0.5">AWB: {order.awbNumber}</p>
+                        )}
+                      </div>
                     </div>
                     <p className="text-[#F5EDD8] text-sm font-medium">{order.customer}</p>
                     <p className="text-[#F5EDD8]/40 text-xs mt-0.5">{order.items}</p>
-                    <div className="flex items-center gap-3 mt-2 flex-wrap">
-                      <span className="text-[#F5EDD8] text-sm font-semibold">₹{order.amount}</span>
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border uppercase
-                        ${order.payment === 'COD' ? 'bg-[#E8721C]/10 text-[#E8721C] border-[#E8721C]/30' : 'bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/30'}
-                      `}>
-                        {order.payment}
-                      </span>
-                      <span className="text-[#F5EDD8]/30 text-xs">{order.date}</span>
+                    <div className="flex items-center gap-3 mt-2 flex-wrap justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[#F5EDD8] text-sm font-semibold">₹{order.amount}</span>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border uppercase
+                          ${order.payment === 'COD' ? 'bg-[#E8721C]/10 text-[#E8721C] border-[#E8721C]/30' : 'bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/30'}
+                        `}>
+                          {order.payment}
+                        </span>
+                        <span className="text-[#F5EDD8]/30 text-xs">{order.date}</span>
+                      </div>
+                      {!order.awbNumber && (currentStatus === 'Confirmed' || currentStatus === 'Packed') && (
+                        <button
+                          onClick={() => handleShipOrder(order.id)}
+                          disabled={shippingLoadingId === order.id}
+                          className="bg-[#22C55E] hover:bg-[#16a34a] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                        >
+                          {shippingLoadingId === order.id ? 'Booking...' : '🚢 Book iCarry'}
+                        </button>
+                      )}
                     </div>
                     <div className="mt-3">
                       <StatusDropdown
