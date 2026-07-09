@@ -25,6 +25,8 @@ interface Order {
   payment_status: string;
   shipping_charge: number;
   order_items: OrderItem[];
+  awb_number?: string;
+  icarry_shipment_id?: string;
 }
 
 interface SavedAddress {
@@ -95,6 +97,8 @@ export default function AccountPage() {
             payment_method,
             payment_status,
             shipping_charge,
+            awb_number,
+            icarry_shipment_id,
             order_items (
               id,
               product_name,
@@ -432,6 +436,24 @@ export default function AccountPage() {
                                   {order.payment_method} ({order.payment_status})
                                 </span>
                               </div>
+
+                              {/* iCarry Tracking Section */}
+                              {order.awb_number && (
+                                <div className="mt-4 pt-4 border-t border-[#E6D7B8]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#E8721C]/5 p-3.5 rounded-xl border border-[#E8721C]/15">
+                                  <div>
+                                    <p className="text-xs font-bold text-[#8B4513] uppercase tracking-wider">iCarry Tracking Details</p>
+                                    <p className="text-xs text-[#2C1810] mt-1">
+                                      AWB Tracking No: <strong className="font-mono text-[#8B1A1A]">{order.awb_number}</strong>
+                                    </p>
+                                  </div>
+                                  <Link
+                                    href={`/order-confirmation/${order.id}`}
+                                    className="inline-flex items-center justify-center bg-[#8B1A1A] hover:bg-[#6b1212] text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
+                                  >
+                                    Track Live Shipment →
+                                  </Link>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
