@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import CartDrawer from "@/components/layout/CartDrawer";
+import ChatBot from "@/components/layout/ChatBot";
 import { Toaster } from "react-hot-toast";
 
 const playfair = Playfair_Display({
@@ -95,6 +96,7 @@ export default function RootLayout({
           <CartProvider>
             <Header />
             <CartDrawer />
+            <ChatBot />
             <main>{children}</main>
             <Footer />
             <Toaster
