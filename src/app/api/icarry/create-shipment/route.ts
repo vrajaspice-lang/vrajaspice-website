@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
     const weight = defaultWeight * totalQty;
 
     const username = process.env.ICARRY_API_USERNAME || "ela43051";
-    const apiKey = process.env.GROQ_API_KEY ? "ajlfCoeZcON3Kkk7yhQQdvSiCe33BUhRXmbWO47UuYzWG6D4iirG3Dnk4pgJgvk9o2Cg7m2NTh1kLytjrpyNWSUWaVGawPM2rUEpHNd07ctschv6NtQK2upToLk6J7Un6FfCl0zqd2xyUauvrDkR0cOGwKIYEsKKsLynVv0iAUTleKtCmhryyTqCDqPwbH2HbPB49zE1ECC8Fek3sk4Up44vuGum0G5fPNAoVIRTCmjQODgxsJkesHau7HHE7t" : ""; 
-    const pickupAddressId = process.env.ICARRY_PICKUP_ADDRESS_ID || "";
+    const apiKey = "ajlfCoeZcON3Kkk7yhQQdvSiCe33BUhRXmbWO47UuYzWG6D4iirG3Dnk4pgJgvk9o2Cg7m2NTh1kLytjrpyNWSUWaVGawPM2rUEpHNd07ctschv6NtQK2upToLk6J7Un6FfCl0zqd2xyUauvrDkR0cOGwKIYEsKKsLynVv0iAUTleKtCmhryyTqCDqPwbH2HbPB49zE1ECC8Fek3sk4Up44vuGum0G5fPNAoVIRTCmjQODgxsJkesHau7HHE7t";
+    const pickupAddressId = process.env.ICARRY_PICKUP_ADDRESS_ID || "94313";
 
     if (!pickupAddressId) {
       return NextResponse.json({
@@ -67,8 +67,8 @@ export async function POST(req: NextRequest) {
       order_value: order.total_amount,
     };
 
-    // Send shipment request to iCarry API (Surface/Hyperlocal endpoint)
-    const response = await fetch(`https://www.icarry.in/api_add_shipment_surface&api_token=${apiKey}`, {
+    // Send shipment request to iCarry API (Surface/Hyperlocal endpoint) using '?' query separator
+    const response = await fetch(`https://www.icarry.in/api_add_shipment_surface?api_token=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

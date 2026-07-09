@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
 
     const apiKey = "ajlfCoeZcON3Kkk7yhQQdvSiCe33BUhRXmbWO47UuYzWG6D4iirG3Dnk4pgJgvk9o2Cg7m2NTh1kLytjrpyNWSUWaVGawPM2rUEpHNd07ctschv6NtQK2upToLk6J7Un6FfCl0zqd2xyUauvrDkR0cOGwKIYEsKKsLynVv0iAUTleKtCmhryyTqCDqPwbH2HbPB49zE1ECC8Fek3sk4Up44vuGum0G5fPNAoVIRTCmjQODgxsJkesHau7HHE7t";
 
-    const response = await fetch(`https://www.icarry.in/api_track_shipment&api_token=${apiKey}`, {
+    const response = await fetch(`https://www.icarry.in/api_track_shipment?api_token=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ shipment_id: shipmentId }),
