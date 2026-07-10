@@ -116,6 +116,117 @@ export default function OrdersPage() {
   const [shippingLoadingId, setShippingLoadingId] = useState<string | null>(null)
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
 
+  // ── Browser Notifications & Realtime Channel ──
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+
+  const playChime = () => {
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioContextClass) return
+      const ctx = new AudioContextClass()
+      
+      const osc1 = ctx.createOscillator()
+      const gain1 = ctx.createGain()
+      osc1.connect(gain1)
+      gain1.connect(ctx.destination)
+      
+      osc1.type = 'sine'
+      osc1.frequency.setValueAtTime(523.25, ctx.currentTime) // C5
+      gain1.gain.setValueAtTime(0.08, ctx.currentTime)
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25)
+      osc1.start(ctx.currentTime)
+      osc1.stop(ctx.currentTime + 0.25)
+      
+      setTimeout(() => {
+        const osc2 = ctx.createOscillator()
+        const gain2 = ctx.createGain()
+        osc2.connect(gain2)
+        gain2.connect(ctx.destination)
+        
+        osc2.type = 'sine'
+        osc2.frequency.setValueAtTime(659.25, ctx.currentTime) // E5
+        gain2.gain.setValueAtTime(0.08, ctx.currentTime)
+        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
+        osc2.start(ctx.currentTime)
+        osc2.stop(ctx.currentTime + 0.35)
+      }, 120)
+    } catch (err) {
+      console.error('Audio chime error:', err)
+    }
+  }
+
+  const triggerBrowserNotification = (order: any) => {
+    if (!('Notification' in window)) return
+    if (Notification.permission === 'granted' && localStorage.getItem('admin_notifications_enabled') === 'true') {
+      const title = 'New Order Placed! 🎉'
+      const options = {
+        body: `Order #${order.order_number || 'N/A'} for ₹${order.total_amount || 0} has been received.`,
+        icon: '/logo.png',
+        tag: `order-${order.id}`,
+        requireInteraction: true,
+      }
+      new Notification(title, options)
+      playChime()
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isEnabled = localStorage.getItem('admin_notifications_enabled') === 'true' && Notification.permission === 'granted'
+      setNotificationsEnabled(isEnabled)
+    }
+  }, [])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-realtime-orders')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        (payload) => {
+          const newOrder = payload.new
+          if (newOrder.payment_status === 'paid' || newOrder.payment_method?.toLowerCase() === 'cod') {
+            triggerBrowserNotification(newOrder)
+            fetchOrders()
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  const toggleNotifications = async () => {
+    if (!('Notification' in window)) {
+      alert('This browser does not support desktop notifications.')
+      return
+    }
+
+    if (Notification.permission === 'granted') {
+      const newState = !notificationsEnabled
+      localStorage.setItem('admin_notifications_enabled', newState ? 'true' : 'false')
+      setNotificationsEnabled(newState)
+      if (newState) {
+        new Notification('Vrajaspice Admin', { body: 'Desktop notifications are active!' })
+        playChime()
+      }
+    } else if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission()
+      if (permission === 'granted') {
+        localStorage.setItem('admin_notifications_enabled', 'true')
+        setNotificationsEnabled(true)
+        new Notification('Vrajaspice Admin', { body: 'Desktop notifications are active!' })
+        playChime()
+      } else {
+        alert('Notification permission denied.')
+      }
+    } else {
+      alert('Notification permission is blocked. Please allow notifications for this site in Chrome settings.')
+    }
+  }
+
   useEffect(() => {
     fetchOrders()
   }, [])
@@ -251,6 +362,17 @@ export default function OrdersPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            onClick={toggleNotifications}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all duration-150 flex items-center gap-1.5
+              ${notificationsEnabled 
+                ? 'border-[#22C55E]/40 text-[#22C55E] bg-[#22C55E]/5 hover:bg-[#22C55E]/10' 
+                : 'border-[#D4A017]/20 text-[#D4A017]/60 hover:text-[#D4A017] hover:border-[#D4A017]/40 bg-transparent'
+              }
+            `}
+          >
+            {notificationsEnabled ? '🔔 Notifications ON' : '🔕 Enable Notifications'}
+          </button>
+          <button
             onClick={fetchOrders}
             className="text-xs text-[#D4A017]/60 hover:text-[#D4A017] transition-colors border border-[#D4A017]/20 rounded-lg px-3 py-1.5 hover:border-[#D4A017]/40"
           >
@@ -366,26 +488,13 @@ export default function OrdersPage() {
                         onChange={(s) => updateStatus(order.id, s)}
                       />
                       {(!order.awbNumber || order.awbNumber === 'null' || order.awbNumber.trim() === '') && currentStatus !== 'Cancelled' && currentStatus !== 'Delivered' && (
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleShipOrder(order.id)}
-                            disabled={shippingLoadingId === order.id}
-                            className="bg-[#22C55E] hover:bg-[#16a34a] text-white text-[10px] font-bold px-2 py-1.5 rounded-lg disabled:opacity-50 transition-colors whitespace-nowrap"
-                          >
-                            {shippingLoadingId === order.id ? 'Booking...' : '🚢 Ship'}
-                          </button>
-                          <button
-                            onClick={() => {
-                              const val = prompt('Enter iCarry AWB tracking number manually:')
-                              if (val && val.trim()) {
-                                handleSaveAwb(order.id, val)
-                              }
-                            }}
-                            className="bg-[#8B4513] hover:bg-[#6B330E] text-[#F5EDD8] text-[10px] font-bold px-2 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-                          >
-                            ✏️ AWB
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleShipOrder(order.id)}
+                          disabled={shippingLoadingId === order.id}
+                          className="bg-[#22C55E] hover:bg-[#16a34a] text-white text-[10px] font-bold px-2 py-1.5 rounded-lg disabled:opacity-50 transition-colors whitespace-nowrap"
+                        >
+                          {shippingLoadingId === order.id ? 'Booking...' : '🚢 Ship'}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -427,26 +536,13 @@ export default function OrdersPage() {
                         <span className="text-[#F5EDD8]/30 text-xs">{order.date}</span>
                       </div>
                       {(!order.awbNumber || order.awbNumber === 'null' || order.awbNumber.trim() === '') && currentStatus !== 'Cancelled' && currentStatus !== 'Delivered' && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleShipOrder(order.id)}
-                            disabled={shippingLoadingId === order.id}
-                            className="bg-[#22C55E] hover:bg-[#16a34a] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
-                          >
-                            {shippingLoadingId === order.id ? 'Booking...' : '🚢 Book iCarry'}
-                          </button>
-                          <button
-                            onClick={() => {
-                              const val = prompt('Enter iCarry AWB tracking number manually:')
-                              if (val && val.trim()) {
-                                handleSaveAwb(order.id, val)
-                              }
-                            }}
-                            className="bg-[#8B4513] hover:bg-[#6B330E] text-[#F5EDD8] text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors"
-                          >
-                            ✏️ Manual
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => handleShipOrder(order.id)}
+                          disabled={shippingLoadingId === order.id}
+                          className="bg-[#22C55E] hover:bg-[#16a34a] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-50 transition-colors"
+                        >
+                          {shippingLoadingId === order.id ? 'Booking...' : '🚢 Book iCarry'}
+                        </button>
                       )}
                     </div>
                     <div className="mt-3">
