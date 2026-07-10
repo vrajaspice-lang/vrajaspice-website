@@ -178,22 +178,31 @@ export default function OrdersPage() {
   }, [])
 
   useEffect(() => {
+    console.log('Subscribing to public:orders INSERT realtime changes...')
     const channel = supabase
       .channel('admin-realtime-orders')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'orders' },
         (payload) => {
+          console.log('Realtime INSERT payload received:', payload)
           const newOrder = payload.new
           if (newOrder.payment_status === 'paid' || newOrder.payment_method?.toLowerCase() === 'cod') {
+            console.log('Triggering notification for order:', newOrder.order_number)
             triggerBrowserNotification(newOrder)
             fetchOrders()
+          } else {
+            console.log('Skipping notification, payment_status is not paid and not COD:', newOrder.payment_status)
           }
         }
       )
-      .subscribe()
+      .subscribe((status, err) => {
+        console.log('Realtime channel subscription status:', status)
+        if (err) console.error('Realtime subscription error:', err)
+      })
 
     return () => {
+      console.log('Unsubscribing from orders realtime channel')
       supabase.removeChannel(channel)
     }
   }, [])
