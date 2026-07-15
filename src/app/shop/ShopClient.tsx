@@ -95,39 +95,39 @@ function Breadcrumb({ category, onBack }: BreadcrumbProps) {
 
 const CATEGORY_METADATA: Record<string, { image: string; desc: string }> = {
   "Everyday Sabji & Curry Masalas": {
-    image: "/product-images/everyday-sabji-masala.png",
+    image: "/product-images/cat-everyday-masalas.png?v=2",
     desc: "Essential spices for your daily subzis, curries, and dals.",
   },
   "Temple & Satvik Prasadam Masalas": {
-    image: "/product-images/govinda-sabji-masala.png",
+    image: "/product-images/cat-temple-satvik.png?v=2",
     desc: "Pure satvik masalas crafted for holy offerings and temple cooking.",
   },
   "Continental Herb Blends": {
-    image: "/product-images/italian-seasoning.png",
+    image: "/product-images/cat-continental-herbs.png?v=2",
     desc: "Premium dried herbs for Italian and Mediterranean dishes.",
   },
   "Herb & Spice Sprinkle Mixes": {
-    image: "/product-images/all-purpose-gourmet-herb-mix.png",
+    image: "/product-images/cat-spice-sprinkles.png?v=2",
     desc: "Fragrant, hand-crafted sprinkles for pastas, paneer, and toasts.",
   },
   "Rice & Pulao Masalas": {
-    image: "/product-images/royal-pulao-masala.png",
+    image: "/product-images/cat-rice-pulao.png?v=2",
     desc: "Royal blends for biryanis, pulaos, and traditional rice varieties.",
   },
   "Breakfast & Tiffin Masalas": {
-    image: "/product-images/premium-upma-masala.png",
+    image: "/product-images/cat-breakfast-tiffin.png?v=2",
     desc: "Quick, aromatic seasonings for pohas, upmas, idlis, and breakfasts.",
   },
   "Snack & Sprinkle Seasonings": {
-    image: "/product-images/everything-satvik-sprinkle.png",
+    image: "/product-images/cat-snack-seasonings.png?v=2",
     desc: "Zesty sprinkles for popcorn, makhanas, salads, and healthy snacks.",
   },
   "Classic Indian Masalas": {
-    image: "/product-images/garam-masala.jpeg",
+    image: "/product-images/cat-classic-indian.png?v=2",
     desc: "Authentic, traditional recipes for Garam Masala, Sambar, and Chole.",
   },
   "Health, Podi & Instant Mixes": {
-    image: "/product-images/moringa-podi.jpeg",
+    image: "/product-images/cat-health-podi.png?v=2",
     desc: "Nutritious podis, instant food, and healthy millet mixes.",
   },
 };
