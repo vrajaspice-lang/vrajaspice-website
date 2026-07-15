@@ -157,9 +157,9 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
       {/* ── Sticky Controls Bar ────────────────────────────────────────── */}
       <div className="sticky top-0 z-20 bg-[#F5EDD8]/95 backdrop-blur-md border-b border-[#EDE0C4] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
             {/* Search */}
-            <div className="relative flex-1 w-full sm:max-w-xs">
+            <div className="relative flex-shrink-0 w-full md:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8B4513]" />
               <input
                 type="text"
@@ -171,7 +171,7 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8B4513] hover:text-[#8B1A1A] transition-colors"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8B4513] hover:text-[#8B1A1A] transition-colors cursor-pointer"
                   aria-label="Clear search"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -179,79 +179,82 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
               )}
             </div>
 
-            <div className="hidden sm:block w-px h-6 bg-[#EDE0C4]" />
+            <div className="hidden md:block w-px h-6 bg-[#EDE0C4]" />
 
-            {/* Category filters */}
-            <div className="flex-1 w-full overflow-hidden">
-              <div className="flex md:flex-wrap items-center gap-1.5 overflow-x-auto md:overflow-x-visible pb-1 md:pb-0 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setActiveCategory(cat)}
-                    className={`whitespace-nowrap text-xs font-semibold px-3.5 py-2 rounded-full transition-all duration-200 border cursor-pointer ${
-                      activeCategory === cat
-                        ? "bg-[#8B1A1A] text-[#F5EDD8] border-[#8B1A1A] shadow-sm"
-                        : "bg-white/70 text-[#6B4E37] border-[#EDE0C4] hover:border-[#8B1A1A]/40 hover:text-[#8B1A1A]"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+            {/* Row container for Categories & Sort on mobile, spreads on desktop */}
+            <div className="flex items-center justify-between gap-3 w-full overflow-hidden flex-1">
+              {/* Category filters */}
+              <div className="flex-1 overflow-hidden relative">
+                <div className="flex md:flex-wrap items-center gap-1.5 overflow-x-auto md:overflow-x-visible pb-1 md:pb-0 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(cat)}
+                      className={`whitespace-nowrap text-xs font-semibold px-3.5 py-2 rounded-full transition-all duration-200 border cursor-pointer ${
+                        activeCategory === cat
+                          ? "bg-[#8B1A1A] text-[#F5EDD8] border-[#8B1A1A] shadow-sm"
+                          : "bg-white/70 text-[#6B4E37] border-[#EDE0C4] hover:border-[#8B1A1A]/40 hover:text-[#8B1A1A]"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="hidden sm:block w-px h-6 bg-[#EDE0C4]" />
+              <div className="hidden md:block w-px h-6 bg-[#EDE0C4]" />
 
-            {/* Sort */}
-            <div className="relative shrink-0">
-              <button
-                onClick={() => setSortOpen((v) => !v)}
-                className="flex items-center gap-2 text-sm font-semibold text-[#2C1810] bg-white/70 border border-[#EDE0C4] hover:border-[#8B1A1A]/40 px-3 py-2.5 rounded-xl transition-all"
-                aria-expanded={sortOpen}
-                aria-haspopup="listbox"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-[#8B4513]" />
-                <span className="hidden md:inline">{activeSortLabel}</span>
-                <span className="md:hidden">Sort</span>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-[#8B4513] transition-transform ${
-                    sortOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {sortOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-10"
-                    onClick={() => setSortOpen(false)}
+              {/* Sort */}
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setSortOpen((v) => !v)}
+                  className="flex items-center gap-2 text-sm font-semibold text-[#2C1810] bg-white/70 border border-[#EDE0C4] hover:border-[#8B1A1A]/40 px-3 py-2 rounded-xl transition-all cursor-pointer h-9"
+                  aria-expanded={sortOpen}
+                  aria-haspopup="listbox"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#8B4513]" />
+                  <span className="hidden md:inline">{activeSortLabel}</span>
+                  <span className="md:hidden">Sort</span>
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-[#8B4513] transition-transform ${
+                      sortOpen ? "rotate-180" : ""
+                    }`}
                   />
-                  <div
-                    role="listbox"
-                    aria-label="Sort options"
-                    className="absolute right-0 top-full mt-2 z-20 bg-white rounded-xl border border-[#EDE0C4] shadow-lg overflow-hidden w-48"
-                  >
-                    {SORT_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        role="option"
-                        aria-selected={sortKey === opt.value}
-                        onClick={() => {
-                          setSortKey(opt.value);
-                          setSortOpen(false);
-                        }}
-                        className={`w-full text-left px-4 py-3 text-sm transition-colors ${
-                          sortKey === opt.value
-                            ? "bg-[#8B1A1A]/5 text-[#8B1A1A] font-semibold"
-                            : "text-[#2C1810] hover:bg-[#F5EDD8]"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+                </button>
+
+                {sortOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setSortOpen(false)}
+                    />
+                    <div
+                      role="listbox"
+                      aria-label="Sort options"
+                      className="absolute right-0 top-full mt-2 z-20 bg-white rounded-xl border border-[#EDE0C4] shadow-lg overflow-hidden w-48"
+                    >
+                      {SORT_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          role="option"
+                          aria-selected={sortKey === opt.value}
+                          onClick={() => {
+                            setSortKey(opt.value);
+                            setSortOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 text-sm transition-colors cursor-pointer ${
+                            sortKey === opt.value
+                              ? "bg-[#8B1A1A]/5 text-[#8B1A1A] font-semibold"
+                              : "text-[#2C1810] hover:bg-[#F5EDD8]"
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
