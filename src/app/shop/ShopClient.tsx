@@ -345,9 +345,13 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
                       <h3 className="font-serif font-bold text-white text-lg md:text-xl mb-1.5 leading-tight group-hover:text-[#D4A017] transition-colors">
                         {cat}
                       </h3>
-                      <p className="text-white/80 text-xs line-clamp-2 leading-relaxed">
+                      <p className="text-white/80 text-xs line-clamp-2 leading-relaxed mb-4">
                         {meta.desc}
                       </p>
+                      <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#D4A017] group-hover:text-[#F5EDD8] transition-colors bg-white/10 group-hover:bg-[#8B1A1A] px-3 py-1.5 rounded-lg border border-[#D4A017]/30 group-hover:border-[#8B1A1A] w-fit">
+                        See All
+                        <span className="inline-block transform group-hover:translate-x-1 transition-transform">→</span>
+                      </div>
                     </div>
                   </button>
                 );
