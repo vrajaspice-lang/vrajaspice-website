@@ -182,15 +182,15 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
             <div className="hidden md:block w-px h-6 bg-[#EDE0C4]" />
 
             {/* Row container for Categories & Sort on mobile, spreads on desktop */}
-            <div className="flex items-center justify-between gap-3 w-full overflow-hidden flex-1">
+            <div className="flex items-start justify-between gap-3 w-full flex-1">
               {/* Category filters */}
-              <div className="flex-1 overflow-hidden relative">
-                <div className="flex md:flex-wrap items-center gap-1.5 overflow-x-auto md:overflow-x-visible pb-1 md:pb-0 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex-1 relative">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {CATEGORIES.map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setActiveCategory(cat)}
-                      className={`whitespace-nowrap text-xs font-semibold px-3.5 py-2 rounded-full transition-all duration-200 border cursor-pointer ${
+                      className={`whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full transition-all duration-200 border cursor-pointer ${
                         activeCategory === cat
                           ? "bg-[#8B1A1A] text-[#F5EDD8] border-[#8B1A1A] shadow-sm"
                           : "bg-white/70 text-[#6B4E37] border-[#EDE0C4] hover:border-[#8B1A1A]/40 hover:text-[#8B1A1A]"
