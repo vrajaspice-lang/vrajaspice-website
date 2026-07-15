@@ -182,9 +182,9 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
             <div className="hidden md:block w-px h-6 bg-[#EDE0C4]" />
 
             {/* Row container for Categories & Sort on mobile, spreads on desktop */}
-            <div className="flex items-start justify-between gap-3 w-full flex-1">
-              {/* Category filters */}
-              <div className="flex-1 relative">
+            <div className="flex items-center justify-between gap-3 w-full flex-1">
+              {/* Desktop view: wrapping category pills */}
+              <div className="hidden md:block flex-1 relative">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {CATEGORIES.map((cat) => (
                     <button
@@ -200,6 +200,22 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Mobile view: compact select dropdown */}
+              <div className="relative flex-1 block md:hidden">
+                <select
+                  value={activeCategory}
+                  onChange={(e) => setActiveCategory(e.target.value as Category)}
+                  className="w-full appearance-none text-xs font-semibold text-[#2C1810] bg-white/70 border border-[#EDE0C4] px-3 pr-8 rounded-xl cursor-pointer focus:outline-none focus:border-[#E8721C] h-9"
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat === "All" ? "Category: All" : cat}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8B4513] pointer-events-none" />
               </div>
 
               <div className="hidden md:block w-px h-6 bg-[#EDE0C4]" />
