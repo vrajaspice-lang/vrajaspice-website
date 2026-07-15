@@ -171,7 +171,7 @@ export const products: Product[] = [
     "featured": true,
     "badge": "Launch Special",
     "imageUrl": "/product-images/ekadashi-sabzi-masala.jpeg?v=2",
-    "category": "Classic Indian Masalas",
+    "category": "Ekadashi",
     "benefits": [
       "Made exclusively with sendha namak — vrat friendly",
       "No table salt, no onion, no garlic",
@@ -375,7 +375,7 @@ export const products: Product[] = [
     "featured": false,
     "badge": "Ekadashi Special",
     "imageUrl": "/product-images/ekadashi-hing.png?v=2",
-    "category": "Temple & Satvik Prasadam Masalas",
+    "category": "Ekadashi",
     "benefits": [
       "100% No Onion No Garlic — pure satvik blend",
       "No artificial colours or preservatives",
@@ -573,7 +573,7 @@ export const products: Product[] = [
     "featured": true,
     "badge": "Ekadashi Special",
     "imageUrl": "/product-images/ekadashi-khichdi-mix.jpeg?v=2",
-    "category": "Health, Podi & Instant Mixes",
+    "category": "Ekadashi",
     "benefits": [
       "100% No Onion No Garlic — pure satvik blend",
       "No artificial colours or preservatives",
@@ -606,7 +606,7 @@ export const products: Product[] = [
     "featured": false,
     "badge": "Ekadashi Special",
     "imageUrl": "/product-images/ekadashi-sabudana-khichdi-mix.jpeg?v=2",
-    "category": "Health, Podi & Instant Mixes",
+    "category": "Ekadashi",
     "benefits": [
       "100% No Onion No Garlic — pure satvik blend",
       "No artificial colours or preservatives",
@@ -738,7 +738,7 @@ export const products: Product[] = [
     "featured": false,
     "badge": "Ekadashi Special",
     "imageUrl": "/product-images/ekadashi-rajgira-dosa-mix.jpeg?v=2",
-    "category": "Health, Podi & Instant Mixes",
+    "category": "Ekadashi",
     "benefits": [
       "100% No Onion No Garlic — pure satvik blend",
       "No artificial colours or preservatives",
@@ -771,7 +771,7 @@ export const products: Product[] = [
     "featured": false,
     "badge": "Ekadashi Special",
     "imageUrl": "/product-images/ekadashi-rajgira-halwa-mix.jpeg?v=2",
-    "category": "Health, Podi & Instant Mixes",
+    "category": "Ekadashi",
     "benefits": [
       "100% No Onion No Garlic — pure satvik blend",
       "No artificial colours or preservatives",
@@ -804,7 +804,7 @@ export const products: Product[] = [
     "featured": false,
     "badge": "Ekadashi Special",
     "imageUrl": "/product-images/ekadashi-pancake-mix.jpeg?v=2",
-    "category": "Health, Podi & Instant Mixes",
+    "category": "Ekadashi",
     "benefits": [
       "100% No Onion No Garlic — pure satvik blend",
       "No artificial colours or preservatives",

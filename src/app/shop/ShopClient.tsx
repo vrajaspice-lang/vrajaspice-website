@@ -22,6 +22,7 @@ const CATEGORIES = [
   "Snack & Sprinkle Seasonings",
   "Classic Indian Masalas",
   "Health, Podi & Instant Mixes",
+  "Ekadashi",
 ] as const;
 
 type Category = (typeof CATEGORIES)[number];
@@ -129,6 +130,10 @@ const CATEGORY_METADATA: Record<string, { image: string; desc: string }> = {
   "Health, Podi & Instant Mixes": {
     image: "/product-images/cat-health-podi.png?v=2",
     desc: "Nutritious podis, instant food, and healthy millet mixes.",
+  },
+  "Ekadashi": {
+    image: "/product-images/cat-ekadashi.png?v=2",
+    desc: "Pure grain-free, satvik ingredients specially for holy fasting days like Ekadashi.",
   },
 };
 
