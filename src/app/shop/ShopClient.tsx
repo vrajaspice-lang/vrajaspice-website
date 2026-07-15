@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Search, SlidersHorizontal, X, ChevronDown } from "lucide-react";
 import { Product } from "@/lib/products";
 import ProductCard from "@/components/ui/ProductCard";
@@ -58,8 +59,13 @@ function BrushStroke() {
   );
 }
 
+interface BreadcrumbProps {
+  category: string | null;
+  onBack: () => void;
+}
+
 /* ─── Breadcrumb ─────────────────────────────────────────────────────── */
-function Breadcrumb() {
+function Breadcrumb({ category, onBack }: BreadcrumbProps) {
   return (
     <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
       <Link
@@ -69,10 +75,62 @@ function Breadcrumb() {
         Home
       </Link>
       <ChevronDown className="w-3.5 h-3.5 text-[#C4A88A] -rotate-90" />
-      <span className="text-[#2C1810] font-semibold">Shop</span>
+      {category ? (
+        <>
+          <button
+            onClick={onBack}
+            className="text-[#8B4513] hover:text-[#8B1A1A] transition-colors font-medium cursor-pointer"
+          >
+            Shop
+          </button>
+          <ChevronDown className="w-3.5 h-3.5 text-[#C4A88A] -rotate-90" />
+          <span className="text-[#2C1810] font-semibold">{category}</span>
+        </>
+      ) : (
+        <span className="text-[#2C1810] font-semibold">Shop</span>
+      )}
     </nav>
   );
 }
+
+const CATEGORY_METADATA: Record<string, { image: string; desc: string }> = {
+  "Everyday Sabji & Curry Masalas": {
+    image: "/product-images/everyday-sabji-masala.png",
+    desc: "Essential spices for your daily subzis, curries, and dals.",
+  },
+  "Temple & Satvik Prasadam Masalas": {
+    image: "/product-images/govinda-sabji-masala.png",
+    desc: "Pure satvik masalas crafted for holy offerings and temple cooking.",
+  },
+  "Continental Herb Blends": {
+    image: "/product-images/italian-seasoning.png",
+    desc: "Premium dried herbs for Italian and Mediterranean dishes.",
+  },
+  "Herb & Spice Sprinkle Mixes": {
+    image: "/product-images/all-purpose-gourmet-herb-mix.png",
+    desc: "Fragrant, hand-crafted sprinkles for pastas, paneer, and toasts.",
+  },
+  "Rice & Pulao Masalas": {
+    image: "/product-images/royal-pulao-masala.png",
+    desc: "Royal blends for biryanis, pulaos, and traditional rice varieties.",
+  },
+  "Breakfast & Tiffin Masalas": {
+    image: "/product-images/premium-upma-masala.png",
+    desc: "Quick, aromatic seasonings for pohas, upmas, idlis, and breakfasts.",
+  },
+  "Snack & Sprinkle Seasonings": {
+    image: "/product-images/everything-satvik-sprinkle.png",
+    desc: "Zesty sprinkles for popcorn, makhanas, salads, and healthy snacks.",
+  },
+  "Classic Indian Masalas": {
+    image: "/product-images/garam-masala.jpeg",
+    desc: "Authentic, traditional recipes for Garam Masala, Sambar, and Chole.",
+  },
+  "Health, Podi & Instant Mixes": {
+    image: "/product-images/moringa-podi.jpeg",
+    desc: "Nutritious podis, instant food, and healthy millet mixes.",
+  },
+};
 
 /* ─── Client Component ────────────────────────────────────────────────── */
 export default function ShopClient({ initialProducts }: { initialProducts: Product[] }) {
@@ -152,191 +210,220 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
 
   return (
     <div className="min-h-screen bg-[#F5EDD8]">
-
-
       {/* ── Sticky Controls Bar ────────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 bg-[#F5EDD8]/95 backdrop-blur-md border-b border-[#EDE0C4] shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-            {/* Search */}
-            <div className="relative flex-shrink-0 w-full md:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8B4513]" />
-              <input
-                type="text"
-                placeholder="Search masalas, ingredients…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-8 py-2.5 text-sm rounded-xl border border-[#EDE0C4] bg-white/80 text-[#2C1810] placeholder:text-[#C4A88A] focus:outline-none focus:border-[#E8721C] focus:ring-2 focus:ring-[#E8721C]/20 transition-all"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8B4513] hover:text-[#8B1A1A] transition-colors cursor-pointer"
-                  aria-label="Clear search"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            <div className="hidden md:block w-px h-6 bg-[#EDE0C4]" />
-
-            {/* Row container for Categories & Sort on mobile, spreads on desktop */}
-            <div className="flex items-center justify-between gap-3 w-full flex-1">
-              {/* Desktop view: wrapping category pills */}
-              <div className="hidden md:block flex-1 relative">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setActiveCategory(cat)}
-                      className={`whitespace-nowrap text-xs font-semibold px-3 py-1.5 rounded-full transition-all duration-200 border cursor-pointer ${
-                        activeCategory === cat
-                          ? "bg-[#8B1A1A] text-[#F5EDD8] border-[#8B1A1A] shadow-sm"
-                          : "bg-white/70 text-[#6B4E37] border-[#EDE0C4] hover:border-[#8B1A1A]/40 hover:text-[#8B1A1A]"
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Mobile view: compact select dropdown */}
-              <div className="relative flex-1 block md:hidden">
-                <select
-                  value={activeCategory}
-                  onChange={(e) => setActiveCategory(e.target.value as Category)}
-                  className="w-full appearance-none text-xs font-semibold text-[#2C1810] bg-white/70 border border-[#EDE0C4] px-3 pr-8 rounded-xl cursor-pointer focus:outline-none focus:border-[#E8721C] h-9"
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat === "All" ? "Category: All" : cat}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8B4513] pointer-events-none" />
+      {activeCategory !== "All" && (
+        <div className="sticky top-0 z-20 bg-[#F5EDD8]/95 backdrop-blur-md border-b border-[#EDE0C4] shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+              {/* Search */}
+              <div className="relative flex-shrink-0 w-full md:max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8B4513]" />
+                <input
+                  type="text"
+                  placeholder="Search masalas, ingredients…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2.5 text-sm rounded-xl border border-[#EDE0C4] bg-white/80 text-[#2C1810] placeholder:text-[#C4A88A] focus:outline-none focus:border-[#E8721C] focus:ring-2 focus:ring-[#E8721C]/20 transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8B4513] hover:text-[#8B1A1A] transition-colors cursor-pointer"
+                    aria-label="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
               <div className="hidden md:block w-px h-6 bg-[#EDE0C4]" />
 
-              {/* Sort */}
-              <div className="relative shrink-0">
-                <button
-                  onClick={() => setSortOpen((v) => !v)}
-                  className="flex items-center gap-2 text-sm font-semibold text-[#2C1810] bg-white/70 border border-[#EDE0C4] hover:border-[#8B1A1A]/40 px-3 py-2 rounded-xl transition-all cursor-pointer h-9"
-                  aria-expanded={sortOpen}
-                  aria-haspopup="listbox"
-                >
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#8B4513]" />
-                  <span className="hidden md:inline">{activeSortLabel}</span>
-                  <span className="md:hidden">Sort</span>
-                  <ChevronDown
-                    className={`w-3.5 h-3.5 text-[#8B4513] transition-transform ${
-                      sortOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {sortOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setSortOpen(false)}
+              <div className="flex items-center justify-end gap-3 w-full flex-1">
+                {/* Sort */}
+                <div className="relative shrink-0">
+                  <button
+                    onClick={() => setSortOpen((v) => !v)}
+                    className="flex items-center gap-2 text-sm font-semibold text-[#2C1810] bg-white/70 border border-[#EDE0C4] hover:border-[#8B1A1A]/40 px-3 py-2.5 rounded-xl transition-all cursor-pointer h-9"
+                    aria-expanded={sortOpen}
+                    aria-haspopup="listbox"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-[#8B4513]" />
+                    <span className="hidden md:inline">{activeSortLabel}</span>
+                    <span className="md:hidden">Sort</span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-[#8B4513] transition-transform ${
+                        sortOpen ? "rotate-180" : ""
+                      }`}
                     />
-                    <div
-                      role="listbox"
-                      aria-label="Sort options"
-                      className="absolute right-0 top-full mt-2 z-20 bg-white rounded-xl border border-[#EDE0C4] shadow-lg overflow-hidden w-48"
-                    >
-                      {SORT_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          role="option"
-                          aria-selected={sortKey === opt.value}
-                          onClick={() => {
-                            setSortKey(opt.value);
-                            setSortOpen(false);
-                          }}
-                          className={`w-full text-left px-4 py-3 text-sm transition-colors cursor-pointer ${
-                            sortKey === opt.value
-                              ? "bg-[#8B1A1A]/5 text-[#8B1A1A] font-semibold"
-                              : "text-[#2C1810] hover:bg-[#F5EDD8]"
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
+                  </button>
+
+                  {sortOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setSortOpen(false)}
+                      />
+                      <div
+                        role="listbox"
+                        aria-label="Sort options"
+                        className="absolute right-0 top-full mt-2 z-20 bg-white rounded-xl border border-[#EDE0C4] shadow-lg overflow-hidden w-48"
+                      >
+                        {SORT_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.value}
+                            role="option"
+                            aria-selected={sortKey === opt.value}
+                            onClick={() => {
+                              setSortKey(opt.value);
+                              setSortOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-3 text-sm transition-colors cursor-pointer ${
+                              sortKey === opt.value
+                                ? "bg-[#8B1A1A]/5 text-[#8B1A1A] font-semibold"
+                                : "text-[#2C1810] hover:bg-[#F5EDD8]"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── Main Content ───────────────────────────────────────────────── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         <div className="mb-6">
-          <Breadcrumb />
-        </div>
-        {/* Result count + active chip */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-[#6B4E37]">
-            Showing{" "}
-            <span className="font-bold text-[#2C1810]">{filtered.length}</span>{" "}
-            {filtered.length === 1 ? "product" : "products"}
-            {activeCategory !== "All" && (
-              <span className="text-[#8B4513]"> · {activeCategory}</span>
-            )}
-            {searchQuery && (
-              <span className="text-[#8B4513]">
-                {" "}
-                · &ldquo;{searchQuery}&rdquo;
-              </span>
-            )}
-          </p>
-
-          {activeCategory !== "All" && (
-            <button
-              onClick={() => setActiveCategory("All")}
-              className="flex items-center gap-1 text-xs font-medium text-[#8B1A1A] bg-[#8B1A1A]/10 px-2.5 py-1 rounded-full hover:bg-[#8B1A1A]/20 transition-colors cursor-pointer"
-            >
-              {activeCategory}
-              <X className="w-3 h-3" />
-            </button>
-          )}
+          <Breadcrumb category={activeCategory === "All" ? null : activeCategory} onBack={() => setActiveCategory("All")} />
         </div>
 
-        {/* Products grid */}
-        {filtered.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {filtered.map((product) => (
-              <ProductCard key={product.slug} product={product} />
-            ))}
+        {activeCategory === "All" ? (
+          <div className="mb-12">
+            {/* Header Text */}
+            <div className="text-center mb-10">
+              <p className="text-[#E8721C] text-sm font-semibold tracking-[0.2em] uppercase mb-2">
+                Our Collections
+              </p>
+              <h2 className="font-serif font-bold text-[#2C1810] text-3xl md:text-4xl mb-4">
+                Shop by Category
+              </h2>
+              <p className="text-[#6B4E37] max-w-xl mx-auto text-base">
+                Discover our hand-crafted, small-batch spice blends made with 100% pure, satvik ingredients. No onion, no garlic.
+              </p>
+              <BrushStroke />
+            </div>
+
+            {/* 3x3 Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {CATEGORIES.filter(c => c !== "All").map((cat) => {
+                const meta = CATEGORY_METADATA[cat] || { image: "/placeholder.png", desc: "" };
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat)}
+                    className="group relative h-64 rounded-2xl overflow-hidden border border-[#EDE0C4] hover:border-[#E8721C]/60 hover:shadow-[0_8px_30px_rgba(232,114,28,0.15)] transition-all duration-300 text-left flex flex-col justify-end cursor-pointer w-full"
+                  >
+                    {/* Background image */}
+                    <div className="absolute inset-0 z-0">
+                      <Image
+                        src={meta.image}
+                        alt={cat}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      {/* Dark overlay for text readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
+                    </div>
+
+                    {/* Text content */}
+                    <div className="relative z-10 p-6 flex flex-col justify-end h-full w-full">
+                      <h3 className="font-serif font-bold text-white text-lg md:text-xl mb-1.5 leading-tight group-hover:text-[#D4A017] transition-colors">
+                        {cat}
+                      </h3>
+                      <p className="text-white/80 text-xs line-clamp-2 leading-relaxed">
+                        {meta.desc}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : (
-          <div className="text-center py-24">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#EDE0C4] flex items-center justify-center text-3xl">
-              🌿
+          /* Products List view */
+          <>
+            {/* Header Text */}
+            <div className="text-center mb-10">
+              <p className="text-[#E8721C] text-sm font-semibold tracking-[0.2em] uppercase mb-2">
+                Category
+              </p>
+              <h2 className="font-serif font-bold text-[#2C1810] text-3xl md:text-4xl mb-4">
+                {activeCategory}
+              </h2>
+              <p className="text-[#6B4E37] max-w-xl mx-auto text-base">
+                {CATEGORY_METADATA[activeCategory]?.desc}
+              </p>
+              <BrushStroke />
             </div>
-            <h3 className="font-serif font-bold text-[#2C1810] text-xl mb-2">
-              No products found
-            </h3>
-            <p className="text-[#6B4E37] text-sm mb-6 max-w-sm mx-auto">
-              Try adjusting your search or filter to find what you&apos;re looking for.
-            </p>
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setActiveCategory("All");
-              }}
-              className="inline-flex items-center gap-2 bg-[#8B1A1A] text-[#F5EDD8] px-6 py-3 rounded-xl font-semibold text-sm hover:bg-[#6B1212] transition-colors"
-            >
-              Clear all filters
-            </button>
-          </div>
+
+            {/* Result count + active chip */}
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-sm text-[#6B4E37]">
+                Showing{" "}
+                <span className="font-bold text-[#2C1810]">{filtered.length}</span>{" "}
+                {filtered.length === 1 ? "product" : "products"}
+                {searchQuery && (
+                  <span className="text-[#8B4513]">
+                    {" "}
+                    · &ldquo;{searchQuery}&rdquo;
+                  </span>
+                )}
+              </p>
+
+              <button
+                onClick={() => setActiveCategory("All")}
+                className="flex items-center gap-1 text-xs font-medium text-[#8B1A1A] bg-[#8B1A1A]/10 px-2.5 py-1 rounded-full hover:bg-[#8B1A1A]/20 transition-colors cursor-pointer"
+              >
+                Back to Categories
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Products grid */}
+            {filtered.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {filtered.map((product) => (
+                  <ProductCard key={product.slug} product={product} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-24">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#EDE0C4] flex items-center justify-center text-3xl">
+                  🌿
+                </div>
+                <h3 className="font-serif font-bold text-[#2C1810] text-xl mb-2">
+                  No products found
+                </h3>
+                <p className="text-[#6B4E37] text-sm mb-6 max-w-sm mx-auto">
+                  Try adjusting your search or filters to find what you&apos;re looking for.
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    setActiveCategory("All");
+                  }}
+                  className="inline-flex items-center gap-2 bg-[#8B1A1A] text-[#F5EDD8] px-6 py-3 rounded-xl font-semibold text-sm hover:bg-[#6B1212] transition-colors"
+                >
+                  Back to Categories
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {/* Bottom CTA banner */}
