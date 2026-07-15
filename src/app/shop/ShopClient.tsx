@@ -13,6 +13,7 @@ type SortKey = "popularity" | "price-asc" | "price-desc";
 
 const CATEGORIES = [
   "All",
+  "Ekadashi",
   "Everyday Sabji & Curry Masalas",
   "Temple & Satvik Prasadam Masalas",
   "Continental Herb Blends",
@@ -22,7 +23,6 @@ const CATEGORIES = [
   "Snack & Sprinkle Seasonings",
   "Classic Indian Masalas",
   "Health, Podi & Instant Mixes",
-  "Ekadashi",
 ] as const;
 
 type Category = (typeof CATEGORIES)[number];
