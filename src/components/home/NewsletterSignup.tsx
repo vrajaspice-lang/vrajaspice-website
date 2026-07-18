@@ -19,16 +19,18 @@ export default function BulkOrderContact() {
     }
     setLoading(true);
     try {
-      // Google Apps Script reads form-encoded data via e.parameter
-      const formData = new FormData();
-      formData.append("name", form.name);
-      formData.append("phone", form.phone);
-      formData.append("enquiry", form.enquiry);
+      // Send as URL-encoded string — most reliable for Google Apps Script
+      const payload = new URLSearchParams({
+        name: form.name,
+        phone: form.phone,
+        enquiry: form.enquiry,
+      }).toString();
 
       await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
-        body: formData,
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: payload,
       });
 
       // Reset form fields and show success
