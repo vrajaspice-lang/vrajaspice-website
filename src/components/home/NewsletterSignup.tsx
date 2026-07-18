@@ -19,24 +19,32 @@ export default function BulkOrderContact() {
     }
     setLoading(true);
     try {
-      // Use no-cors mode since Google Apps Script doesn't return CORS headers for redirect responses
+      // Google Apps Script reads form-encoded data via e.parameter
+      const formData = new FormData();
+      formData.append("name", form.name);
+      formData.append("phone", form.phone);
+      formData.append("enquiry", form.enquiry);
+
       await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name,
-          phone: form.phone,
-          enquiry: form.enquiry,
-        }),
+        body: formData,
       });
+
+      // Reset form fields and show success
+      setForm({ name: "", phone: "", enquiry: "" });
       setSubmitted(true);
-      toast.success("Thank you! We'll get back to you shortly.");
+      toast.success("Enquiry sent! We'll get back to you shortly.");
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleReset = () => {
+    setForm({ name: "", phone: "", enquiry: "" });
+    setSubmitted(false);
   };
 
   return (
@@ -78,7 +86,7 @@ export default function BulkOrderContact() {
         </h2>
         <p className="text-[#F5EDD8]/80 text-base mb-10 leading-relaxed">
           Looking to order in bulk for your family, temple, restaurant, or
-          gifting? Get in touch and we'll craft a special deal just for you.
+          gifting? Get in touch and we&apos;ll craft a special deal just for you.
         </p>
 
         {/* Trust chips */}
@@ -99,10 +107,16 @@ export default function BulkOrderContact() {
             <h3 className="font-serif font-bold text-[#F5EDD8] text-2xl mb-2">
               Enquiry Received!
             </h3>
-            <p className="text-[#F5EDD8]/80">
+            <p className="text-[#F5EDD8]/80 mb-6">
               Thank you for reaching out. Our team will contact you within 24 hours
               to discuss your bulk order requirements.
             </p>
+            <button
+              onClick={handleReset}
+              className="bg-[#D4A017] text-[#2C1810] px-8 py-3 rounded-xl font-bold text-sm hover:bg-[#E4B027] transition-all duration-200"
+            >
+              Submit Another Enquiry
+            </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 text-left">
