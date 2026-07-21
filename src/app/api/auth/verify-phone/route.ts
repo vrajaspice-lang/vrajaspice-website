@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// Uses service role to update phone_verified flag
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SECRET_KEY!
-);
-
 function formatPhoneNumber(num: string): string {
   const clean = num.replace(/\D/g, "");
   if (clean.length === 10) return "+91" + clean;
   if (!num.startsWith("+") && clean.startsWith("91")) return "+" + clean;
   return num.startsWith("+") ? num : "+" + num;
 }
+
 
 export async function POST(request: Request) {
   try {
@@ -54,6 +49,10 @@ export async function POST(request: Request) {
     }
 
     // 2. Mark phone as verified in customers table
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+    const supabaseSecret = process.env.SUPABASE_SECRET_KEY || "placeholder-key";
+    const supabaseAdmin = createClient(supabaseUrl, supabaseSecret);
+
     const formattedPhone = formatPhoneNumber(phone);
     const { error: updateError } = await supabaseAdmin
       .from("customers")
