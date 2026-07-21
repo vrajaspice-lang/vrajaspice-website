@@ -86,7 +86,7 @@ const loadRazorpayScript = () => {
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clearCart } = useCart();
-  const { profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
 
   const [form, setForm] = useState<ShippingForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -96,6 +96,15 @@ export default function CheckoutPage() {
 
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("custom");
+
+  // ── Phone OTP gate state ────────────────────────────────────────────────────
+  const [otpPhone, setOtpPhone] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [maskId, setMaskId] = useState("");
+  const [otpStep, setOtpStep] = useState<"phone" | "otp">("phone");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const shipping = subtotal >= FREE_SHIPPING_AT ? 0 : SHIPPING_CHARGE;
   const total = subtotal + shipping;
@@ -348,6 +357,202 @@ export default function CheckoutPage() {
       );
       setIsSubmitting(false);
     }
+  }
+
+  // ── Resend cooldown timer ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+      return () => clearTimeout(t);
+    }
+  }, [resendCooldown]);
+
+  // ── Send OTP to phone ────────────────────────────────────────────────────────
+  async function handleSendOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (!otpPhone || otpPhone.replace(/\D/g, "").length < 10) {
+      setOtpError("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+    setOtpError("");
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/send-register-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ whatsappNumber: otpPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send OTP.");
+      setMaskId(data.maskId);
+      setOtpStep("otp");
+      setResendCooldown(60);
+    } catch (err: any) {
+      setOtpError(err.message || "Failed to send OTP. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  // ── Verify OTP and mark phone verified ──────────────────────────────────────
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    if (otpCode.length !== 6) {
+      setOtpError("Please enter the 6-digit code.");
+      return;
+    }
+    setOtpError("");
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify-phone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          otp: otpCode,
+          maskId,
+          phone: otpPhone,
+          userId: user?.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Incorrect OTP.");
+      // Re-fetch profile so phone_verified becomes true
+      await refreshProfile();
+    } catch (err: any) {
+      setOtpError(err.message || "Verification failed. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  // ── Resend OTP ───────────────────────────────────────────────────────────────
+  async function handleResendOtp() {
+    if (resendCooldown > 0) return;
+    setOtpError("");
+    setOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/send-register-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ whatsappNumber: otpPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to resend OTP.");
+      setMaskId(data.maskId);
+      setResendCooldown(60);
+      setOtpCode("");
+    } catch (err: any) {
+      setOtpError(err.message || "Failed to resend OTP.");
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  // ── Phone verification gate (shown only on first order) ──────────────────────
+  if (profile && !profile.phone_verified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-16" style={{ background: "#F5EDD8" }}>
+        <div className="w-full max-w-md bg-[#FAF6EB] border border-[#E6D7B8] rounded-2xl p-8 shadow-xl">
+          {/* Icon */}
+          <div className="text-center mb-6">
+            <div className="w-14 h-14 rounded-full bg-[#8B1A1A]/10 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-7 h-7 text-[#8B1A1A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+            </div>
+            <h2 className="font-serif text-2xl font-bold text-[#2C1810] mb-1">
+              Verify Your Phone
+            </h2>
+            <p className="text-[#4A2A1A] text-sm">
+              {otpStep === "phone"
+                ? "One-time verification required before your first order."
+                : `We sent a 6-digit code to ${otpPhone}`}
+            </p>
+          </div>
+
+          {otpError && (
+            <div className="flex items-center gap-2 bg-[#8B1A1A]/10 border border-[#8B1A1A]/20 rounded-xl px-4 py-3 mb-4">
+              <svg className="w-4 h-4 text-[#8B1A1A] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-[#8B1A1A] text-xs font-semibold">{otpError}</p>
+            </div>
+          )}
+
+          {otpStep === "phone" ? (
+            <form onSubmit={handleSendOtp} className="space-y-4">
+              <div>
+                <label className="block text-[#4A2A1A] text-xs font-semibold uppercase tracking-wider mb-2">
+                  Mobile Number
+                </label>
+                <input
+                  id="otp-phone"
+                  type="tel"
+                  required
+                  placeholder="e.g. 9121552086"
+                  value={otpPhone}
+                  onChange={(e) => setOtpPhone(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#F5EDD8]/40 border border-[#E6D7B8] text-[#2C1810] placeholder-[#2C1810]/30 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#8B1A1A] focus:border-[#8B1A1A] transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={otpLoading}
+                className="w-full py-3 bg-[#2C1810] hover:bg-[#8B1A1A] text-[#F5EDD8] font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {otpLoading ? (
+                  <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Sending OTP...</>
+                ) : ("Send OTP →")}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div>
+                <label className="block text-[#4A2A1A] text-xs font-semibold uppercase tracking-wider mb-2">
+                  Enter 6-Digit OTP
+                </label>
+                <input
+                  id="otp-code"
+                  type="text"
+                  required
+                  maxLength={6}
+                  placeholder="123456"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                  className="w-full px-4 py-3 bg-[#F5EDD8]/40 border border-[#E6D7B8] text-[#2C1810] placeholder-[#2C1810]/30 rounded-xl text-center text-lg font-mono tracking-[0.4em] focus:outline-none focus:ring-1 focus:ring-[#8B1A1A] focus:border-[#8B1A1A] transition-all"
+                />
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <button
+                  type="button"
+                  onClick={() => { setOtpStep("phone"); setOtpCode(""); setOtpError(""); }}
+                  className="text-[#8B4513] hover:text-[#8B1A1A] underline font-semibold"
+                >
+                  ← Change Number
+                </button>
+                {resendCooldown > 0 ? (
+                  <span className="text-[#8B4513]/50">Resend in {resendCooldown}s</span>
+                ) : (
+                  <button type="button" onClick={handleResendOtp} className="text-[#8B1A1A] hover:underline font-semibold">
+                    Resend OTP
+                  </button>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={otpLoading || otpCode.length !== 6}
+                className="w-full py-3 bg-[#2C1810] hover:bg-[#8B1A1A] text-[#F5EDD8] font-semibold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {otpLoading ? (
+                  <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>Verifying...</>
+                ) : ("Verify & Proceed to Checkout →")}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
   }
 
   // ── Empty cart guard ────────────────────────────────────────────────────────

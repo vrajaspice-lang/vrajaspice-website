@@ -10,6 +10,8 @@ interface CustomerProfile {
   email: string | null;
   mobile: string | null;
   whatsapp_number: string | null;
+  phone_verified: boolean;
+  user_id: string | null;
 }
 
 interface AuthContextType {
@@ -17,6 +19,7 @@ interface AuthContextType {
   profile: CustomerProfile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   isConfigured: boolean;
 }
 
@@ -29,11 +32,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isConfigured = isSupabaseConfigured();
 
   // Helper to fetch customer profile from customers table
-  const fetchProfile = async (userId: string, email: string) => {
+  const fetchProfile = async (userId: string, email: string, displayName?: string) => {
     try {
       const { data, error } = await supabase
         .from("customers")
-        .select("id, full_name, email, mobile, whatsapp_number")
+        .select("id, full_name, email, mobile, whatsapp_number, phone_verified, user_id")
         .eq("user_id", userId)
         .maybeSingle();
 
@@ -43,17 +46,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (!data) {
-        // Auto-create profile row if it's missing in customers table (self-healing)
+        // Auto-create profile row on first Google login
         const { data: newProfile, error: createError } = await supabase
           .from("customers")
           .insert([
             {
-              full_name: "Valued Customer",
+              full_name: displayName || "Valued Customer",
               email: email || null,
               user_id: userId,
+              phone_verified: false,
             },
           ])
-          .select("id, full_name, email, mobile, whatsapp_number")
+          .select("id, full_name, email, mobile, whatsapp_number, phone_verified, user_id")
           .maybeSingle();
 
         if (createError) {
@@ -80,32 +84,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        const customerData = await fetchProfile(session.user.id, session.user.email || "");
+        const displayName =
+          session.user.user_metadata?.full_name ||
+          session.user.user_metadata?.name ||
+          "";
+        const customerData = await fetchProfile(
+          session.user.id,
+          session.user.email || "",
+          displayName
+        );
         setProfile(customerData);
       }
       setLoading(false);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setLoading(true);
-        if (session?.user) {
-          setUser(session.user);
-          const customerData = await fetchProfile(session.user.id, session.user.email || "");
-          setProfile(customerData);
-        } else {
-          setUser(null);
-          setProfile(null);
-        }
-        setLoading(false);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setLoading(true);
+      if (session?.user) {
+        setUser(session.user);
+        const displayName =
+          session.user.user_metadata?.full_name ||
+          session.user.user_metadata?.name ||
+          "";
+        const customerData = await fetchProfile(
+          session.user.id,
+          session.user.email || "",
+          displayName
+        );
+        setProfile(customerData);
+      } else {
+        setUser(null);
+        setProfile(null);
       }
-    );
+      setLoading(false);
+    });
 
     return () => {
       subscription.unsubscribe();
     };
   }, [isConfigured]);
+
+  // Allows checkout to re-fetch profile after phone verification
+  const refreshProfile = async () => {
+    if (!user) return;
+    const displayName =
+      user.user_metadata?.full_name || user.user_metadata?.name || "";
+    const updated = await fetchProfile(user.id, user.email || "", displayName);
+    setProfile(updated);
+  };
 
   const signOut = async () => {
     if (!isConfigured) return;
@@ -119,7 +148,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut, isConfigured }}>
+    <AuthContext.Provider
+      value={{ user, profile, loading, signOut, refreshProfile, isConfigured }}
+    >
       {children}
     </AuthContext.Provider>
   );
